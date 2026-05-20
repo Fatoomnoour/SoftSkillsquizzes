@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soft Skills — Topic Quizzes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e14;
+    --surface: #16161f;
+    --surface2: #1e1e2b;
+    --border: #2a2a3d;
+    --accent1: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --accent4: #f9ca24;
+    --text: #e8e8f0;
+    --muted: #7878a0;
+    --correct: #43e97b;
+    --wrong: #ff6584;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 40px 0;
+    position: relative;
+  }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #6c63ff 0%, #ff6584 50%, #f9ca24 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header p {
+    color: var(--muted);
+    margin-top: 8px;
+    font-size: 15px;
+  }
+  .header-line {
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent1), transparent);
+    margin: 24px 0 0;
+  }
+
+  /* ── TRACK TABS ── */
+  .tracks {
+    display: flex;
+    gap: 12px;
+    padding: 28px 40px 0;
+    flex-wrap: wrap;
+  }
+  .track-btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .25s;
+  }
+  .track-btn:hover { border-color: var(--accent1); color: var(--text); }
+  .track-btn.active {
+    background: var(--accent1);
+    border-color: var(--accent1);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(108,99,255,.4);
+  }
+  .track-btn[data-track="freelancing"].active { background: var(--accent2); border-color: var(--accent2); box-shadow: 0 0 20px rgba(255,101,132,.4); }
+  .track-btn[data-track="entrepreneurship"].active { background: var(--accent3); border-color: var(--accent3); color: #111; box-shadow: 0 0 20px rgba(67,233,123,.4); }
+
+  /* ── TOPIC GRID ── */
+  .topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    padding: 24px 40px;
+  }
+  .topic-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .topic-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  [data-track="softskills"] .topic-card::before { background: linear-gradient(135deg, rgba(108,99,255,.1), transparent); }
+  [data-track="freelancing"] .topic-card::before { background: linear-gradient(135deg, rgba(255,101,132,.1), transparent); }
+  [data-track="entrepreneurship"] .topic-card::before { background: linear-gradient(135deg, rgba(67,233,123,.1), transparent); }
+  .topic-card:hover { border-color: var(--accent1); transform: translateY(-2px); }
+  .topic-card:hover::before { opacity: 1; }
+  [data-track="freelancing"] .topic-card:hover { border-color: var(--accent2); }
+  [data-track="entrepreneurship"] .topic-card:hover { border-color: var(--accent3); }
+  .topic-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 8px;
+  }
+  .topic-card .q-count {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .topic-card .done-badge {
+    display: none;
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--correct);
+    color: #111;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 50px;
+  }
+  .topic-card.completed .done-badge { display: block; }
+  .topic-card.completed { border-color: var(--correct); opacity: .7; }
+
+  /* ── QUIZ MODAL ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    max-width: 620px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 36px;
+    position: relative;
+    animation: pop .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop {
+    from { opacity:0; transform: scale(.92) translateY(20px); }
+    to   { opacity:1; transform: scale(1) translateY(0); }
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .modal-close:hover { background: var(--wrong); color: #fff; }
+  .modal-track-tag {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 50px;
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+
+  /* progress bar */
+  .progress-wrap {
+    margin: 20px 0;
+    background: var(--surface2);
+    border-radius: 50px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 50px;
+    background: linear-gradient(90deg, var(--accent1), var(--accent2));
+    transition: width .4s ease;
+  }
+  .q-counter {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* question */
+  .question-text {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.55;
+    margin-bottom: 22px;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .opt-btn {
+    text-align: left;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14.5px;
+    cursor: pointer;
+    transition: all .18s;
+    position: relative;
+  }
+  .opt-btn:hover:not(:disabled) { border-color: var(--accent1); background: rgba(108,99,255,.1); }
+  .opt-btn.correct { border-color: var(--correct); background: rgba(67,233,123,.12); color: var(--correct); }
+  .opt-btn.wrong   { border-color: var(--wrong);   background: rgba(255,101,132,.12); color: var(--wrong); }
+  .opt-btn:disabled { cursor: default; }
+
+  .explanation {
+    display: none;
+    background: var(--surface2);
+    border-left: 3px solid var(--accent1);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .explanation.show { display: block; }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .score-chip {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    background: var(--surface2);
+    color: var(--muted);
+  }
+  .next-btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 24px;
+    border-radius: 50px;
+    border: none;
+    background: var(--accent1);
+    color: #fff;
+    cursor: pointer;
+    transition: all .2s;
+    display: none;
+  }
+  .next-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,.4); }
+  .next-btn.show { display: block; }
+
+  /* Results screen */
+  .results {
+    display: none;
+    text-align: center;
+    padding: 20px 0;
+  }
+  .results.show { display: block; }
+  .results-emoji { font-size: 56px; margin-bottom: 16px; }
+  .results h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .results .score-text {
+    font-size: 42px;
+    font-weight: 800;
+    font-family: 'Syne', sans-serif;
+    margin: 16px 0;
+  }
+  .results p { color: var(--muted); font-size: 15px; margin-bottom: 24px; }
+  .retry-btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 28px;
+    border-radius: 50px;
+    border: 1.5px solid var(--accent1);
+    background: transparent;
+    color: var(--accent1);
+    cursor: pointer;
+    margin-right: 10px;
+    transition: all .2s;
+  }
+  .retry-btn:hover { background: var(--accent1); color: #fff; }
+
+  /* hidden track sections */
+  .track-section { display: none; }
+  .track-section.active { display: block; }
+
+  .day-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 40px;
+    margin: 8px 0 4px;
+  }
+
+  /* ── WRONG ANSWERS FAB BUTTON ── */
+  .fab-wrong {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 200;
+    background: var(--wrong);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 58px;
+    height: 58px;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(255,101,132,.45);
+    transition: transform .2s, box-shadow .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fab-wrong:hover { transform: scale(1.1); box-shadow: 0 8px 30px rgba(255,101,132,.6); }
+  .fab-wrong .fab-badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    background: var(--accent4);
+    color: #111;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 12px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .fab-wrong .fab-badge.visible { display: flex; }
+
+  /* ── WRONG ANSWERS OVERLAY ── */
+  .wrong-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(8px);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .wrong-overlay.open { display: flex; }
+  .wrong-modal {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 36px;
+    position: relative;
+    animation: pop .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .wrong-modal::-webkit-scrollbar { width: 6px; }
+  .wrong-modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  .wrong-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .wrong-modal-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--wrong);
+  }
+  .wrong-header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .clear-wrong-btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 50px;
+    border: 1.5px solid var(--wrong);
+    background: transparent;
+    color: var(--wrong);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .clear-wrong-btn:hover { background: var(--wrong); color: #fff; }
+  .wrong-modal .modal-close {
+    position: static;
+    flex-shrink: 0;
+  }
+
+  /* wrong answer card */
+  .wrong-card {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: border-color .2s;
+  }
+  .wrong-card:hover { border-color: var(--wrong); }
+  .wrong-card-topic {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 50px;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+  .wrong-card-question {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .wrong-card-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .wrong-card-answers .ans-item {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .wrong-card-answers .ans-item.yours {
+    background: rgba(255,101,132,.1);
+    border: 1.5px solid var(--wrong);
+    color: var(--wrong);
+  }
+  .wrong-card-answers .ans-item.correct {
+    background: rgba(67,233,123,.1);
+    border: 1.5px solid var(--correct);
+    color: var(--correct);
+  }
+  .wrong-card-answers .ans-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .wrong-card-explanation {
+    background: rgba(108,99,255,.06);
+    border-left: 3px solid var(--accent1);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .wrong-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .wrong-empty .wrong-empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .wrong-empty p { font-size: 15px; }
+
+  @media (max-width: 600px) {
+    header, .tracks, .topics-grid, .day-label { padding-left: 20px; padding-right: 20px; }
+    .modal { padding: 24px; }
+    .wrong-modal { padding: 24px; }
+    .fab-wrong { width: 50px; height: 50px; font-size: 20px; bottom: 20px; right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Soft Skills Program — Quizzes</h1>
+  <p>Select a track, then choose a topic to start the quiz.</p>
+  <div class="header-line"></div>
+</header>
+
+<div class="tracks">
+  <button class="track-btn active" data-track="softskills" onclick="switchTrack('softskills', this)">🎯 Soft Skills</button>
+  <button class="track-btn" data-track="freelancing" onclick="switchTrack('freelancing', this)">💼 Freelancing</button>
+  <button class="track-btn" data-track="entrepreneurship" onclick="switchTrack('entrepreneurship', this)">🚀 Entrepreneurship</button>
+</div>
+
+<!-- ═══════════════ SOFT SKILLS TRACK ═══════════════ -->
+<div class="track-section active" id="track-softskills" data-track="softskills">
+  <div class="day-label">Day 1</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('career_planning')">
+      <h3>Career Planning</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('personal_branding')">
+      <h3>Personal Branding &amp; Networking</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_1')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz — Career Planning &amp; Personal Branding</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_1b')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz 1.1 — Career Planning &amp; Personal Branding</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+  <div class="day-label">Day 2</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('communication_eq')">
+      <h3>Communication &amp; Emotional Intelligence</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_2')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz — Communication &amp; EQ</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_2b')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz 2.2 — Communication &amp; EQ</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('cv_writing')">
+      <h3>CV Writing &amp; Interviewing Skills</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+  <div class="day-label">Day 3</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('presentation_skills')">
+      <h3>Presentation Skills</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('employment_coaching')">
+      <h3>Employment Coaching</h3>
+      <div class="q-count">8 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FREELANCING TRACK ═══════════════ -->
+<div class="track-section" id="track-freelancing" data-track="freelancing">
+  <div class="day-label">Day 1</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('planning_freelancers')">
+      <h3>Planning for Freelancers</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('portfolio_building')">
+      <h3>Portfolio Building</h3>
+      <div class="q-count">8 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+  <div class="day-label">Day 2</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('freelancing_platforms')">
+      <h3>Freelancing Platforms</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+  <div class="day-label">Day 3</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('budgeting_pricing')">
+      <h3>Budgeting, Pricing &amp; Proposals</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('negotiation_skills')">
+      <h3>Negotiation Skills</h3>
+      <div class="q-count">8 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_3')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz — Budgeting &amp; Pricing</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_3b')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz — Budgeting &amp; Pricing (M4)</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_4')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz — Negotiation Skills</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('official_quiz_4b')" style="border-color:#f9ca24aa">
+      <h3>⭐ Official Quiz — Negotiation (M4 2nd Quiz)</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+  <div class="day-label">Day 4</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('kickstart_profile')">
+      <h3>Kickstart Your Freelance Profile</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ENTREPRENEURSHIP TRACK ═══════════════ -->
+<div class="track-section" id="track-entrepreneurship" data-track="entrepreneurship">
+  <div class="day-label">Day 1</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('intro_entrepreneurship')">
+      <h3>Introduction to Entrepreneurship</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('bmc')">
+      <h3>Business Model Canvas (BMC)</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+  <div class="day-label">Day 2</div>
+  <div class="topics-grid">
+    <div class="topic-card" onclick="openQuiz('marketing_startups')">
+      <h3>Marketing for Startups</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+    <div class="topic-card" onclick="openQuiz('financial_planning')">
+      <h3>Financial Planning for Startups</h3>
+      <div class="q-count">10 questions</div>
+      <div class="done-badge">✓ Done</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ FAB: WRONG ANSWERS ═══════════════ -->
+<button class="fab-wrong" onclick="openWrongAnswers()" title="Review Wrong Answers">
+  📝
+  <span class="fab-badge" id="fab-badge">0</span>
+</button>
+
+<!-- ═══════════════ WRONG ANSWERS OVERLAY ═══════════════ -->
+<div class="wrong-overlay" id="wrong-overlay" onclick="handleWrongOverlayClick(event)">
+  <div class="wrong-modal">
+    <div class="wrong-modal-header">
+      <h2>📝 Review Mistakes</h2>
+      <div class="wrong-header-actions">
+        <button class="clear-wrong-btn" onclick="clearWrongAnswers()">Clear All</button>
+        <button class="modal-close" onclick="closeWrongAnswers()">✕</button>
+      </div>
+    </div>
+    <div id="wrong-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL ═══════════════ -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeQuiz()">✕</button>
+    <div class="modal-track-tag" id="modal-track-tag"></div>
+    <div class="modal-title" id="modal-title"></div>
+
+    <div id="quiz-body">
+      <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="q-counter" id="q-counter"></div>
+      <div class="question-text" id="question-text"></div>
+      <div class="options" id="options"></div>
+      <div class="explanation" id="explanation"></div>
+      <div class="nav-row">
+        <div class="score-chip" id="score-chip">Score: 0 / 0</div>
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next →</button>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-emoji" id="results-emoji"></div>
+      <h2 id="results-title"></h2>
+      <div class="score-text" id="results-score"></div>
+      <p id="results-msg"></p>
+      <button class="retry-btn" onclick="retryQuiz()">↺ Retry</button>
+      <button class="next-btn show" style="display:inline-block" onclick="closeQuiz()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUIZZES = {
+
+  career_planning: {
+    title: "Career Planning",
+    track: "Soft Skills",
+    color: "#6c63ff",
+    questions: [
+      { q: "What is career planning?", opts: ["A plan to save money for retirement","The process of deciding and pursuing your desired career path","A short-term job search strategy","Writing a CV"], ans: 1, exp: "Career planning is the ongoing process of deciding and pursuing your desired career path, based on personal traits, interests, values, and market awareness." },
+      { q: "Which of the following is a core element of the Career Diamond model?", opts: ["Salary negotiation","Networking only","Values and World of Work","Resume formatting"], ans: 2, exp: "The Career Diamond model includes key aspects like Values and the World of Work, helping you align your personal traits with career opportunities." },
+      { q: "SMART goals must be:", opts: ["Simple, Manageable, Achievable, Reasonable, Timely","Specific, Measurable, Achievable, Relevant, Time-bound","Structured, Motivated, Analytical, Realistic, Trackable","Short, Meaningful, Active, Reliable, Tested"], ans: 1, exp: "SMART stands for Specific, Measurable, Achievable, Relevant, and Time-bound — a framework to set effective career goals." },
+      { q: "Career planning takes into account which personal factors?", opts: ["Height, age, and nationality","Traits, interests, values, and market awareness","Only academic qualifications","Salary expectations only"], ans: 1, exp: "Career planning is based on personal traits, interests, values, and market awareness to help find the right fit." },
+      { q: "What does 'World of Work' mean in career planning?", opts: ["Your social media presence","The physical office environment","The landscape of jobs, trends, and market demands","Your relationship with your manager"], ans: 2, exp: "The World of Work refers to the broader landscape of available jobs, emerging trends, and market demands that shape career opportunities." },
+      { q: "What is an emerging trend in the context of career planning?", opts: ["A trend from 10 years ago","A growing change in the job market or industry that creates new opportunities","The average salary in a field","The most popular degree program"], ans: 1, exp: "Emerging trends are growing changes in the job market or industry that can create new opportunities for career paths." },
+      { q: "Which of the following is NOT a step in career planning?", opts: ["Identifying what you are good at","Matching skills to existing jobs","Copying someone else's career path","Setting a career action plan"], ans: 2, exp: "Career planning is a personal process — it's about finding YOUR fit, not copying someone else's path." },
+      { q: "A Career Action Plan helps you:", opts: ["Decide which car to buy","Take structured steps toward your career goals","Choose a hobby","Rate your colleagues"], ans: 1, exp: "A Career Action Plan is a structured roadmap that helps you take clear steps toward your professional goals." },
+      { q: "Why is market awareness important in career planning?", opts: ["It helps you negotiate rent","It reveals which skills are in demand and where opportunities exist","It helps pick a college major only","It eliminates the need for networking"], ans: 1, exp: "Market awareness helps you understand which skills are currently in demand so you can align your development accordingly." },
+      { q: "Career planning is best described as:", opts: ["A one-time activity done at school","An ongoing process throughout your professional life","Only relevant for people changing jobs","Something only career coaches do"], ans: 1, exp: "Career planning is an ongoing, lifelong process that evolves as your skills, interests, and the job market change." },
+    ]
+  },
+
+  personal_branding: {
+    title: "Personal Branding & Networking",
+    track: "Soft Skills",
+    color: "#6c63ff",
+    questions: [
+      { q: "Personal branding is best defined as:", opts: ["Designing a personal logo","What people say about you when you're not in the room","Your social media follower count","Your academic credentials"], ans: 1, exp: "Personal branding is about your reputation — what people say about you when you're not in the room." },
+      { q: "Why is personal branding especially important for freelancers?", opts: ["It helps you avoid taxes","It communicates your differentiators and attracts clients","It replaces the need for a portfolio","It guarantees a high salary"], ans: 1, exp: "Just like product brands, personal brands communicate what makes you unique and help attract the right clients." },
+      { q: "Which platform is specifically highlighted for personal branding and networking?", opts: ["TikTok","Instagram","LinkedIn","YouTube"], ans: 2, exp: "LinkedIn is the primary professional platform recommended for personal branding and networking in the course material." },
+      { q: "Networking is best described as:", opts: ["Attending as many events as possible","Building meaningful professional relationships that create mutual value","Only connecting online","Asking people for favors"], ans: 1, exp: "Effective networking is about building genuine, mutually valuable professional relationships over time." },
+      { q: "Which is a pillar of a powerful personal brand?", opts: ["Having the most certifications","Consistency, clarity, and authenticity","Posting every hour on social media","Using complex vocabulary"], ans: 1, exp: "A powerful personal brand is built on consistency, clarity about your value, and authenticity in how you present yourself." },
+      { q: "The Personal Branding Framework helps you:", opts: ["Write your CV","Identify and communicate your unique value clearly","Set your pricing","Find a job faster"], ans: 1, exp: "The Personal Branding Framework is a structured approach to identify your strengths and communicate your value proposition." },
+      { q: "Turning up the volume on your strengths and sharing them with the world refers to:", opts: ["Public speaking","Personal branding","Negotiation","Networking"], ans: 1, exp: "This phrase describes personal branding — amplifying and communicating your unique strengths to the world." },
+      { q: "Elevating your freelancing brand means:", opts: ["Raising your prices","Positioning yourself professionally to attract better clients","Getting more social media followers","Copying a competitor's brand"], ans: 1, exp: "Elevating your freelancing brand means strategically presenting yourself to attract higher-quality clients and opportunities." },
+      { q: "A rule for effective networking is:", opts: ["Only network when you need a job","Give before you ask — offer value first","Network exclusively online","Avoid meeting people outside your field"], ans: 1, exp: "Effective networking is based on generosity — offering value and building relationships before asking for anything in return." },
+      { q: "Personal branding is similar to product branding because:", opts: ["Both require a design team","Both communicate unique value to attract the right audience","Both need an advertising budget","Both are created by companies"], ans: 1, exp: "Just as products are branded to communicate their value, professionals brand themselves to attract the right clients and employers." },
+    ]
+  },
+
+  communication_eq: {
+    title: "Communication & Emotional Intelligence",
+    track: "Soft Skills",
+    color: "#6c63ff",
+    questions: [
+      { q: "What does EQ stand for?", opts: ["Educational Quotient","Emotional Quotient (Emotional Intelligence)","Entrepreneurial Quality","Effective Questioning"], ans: 1, exp: "EQ stands for Emotional Quotient — a measure of Emotional Intelligence, which is the ability to understand and manage emotions." },
+      { q: "Which is NOT a component of Emotional Intelligence?", opts: ["Self-Awareness","Empathy","Social Skills","Technical Skills"], ans: 3, exp: "The 5 components of EQ are Self-Awareness, Self-Regulation, Self-Motivation, Empathy, and Social Skills — technical skills are not included." },
+      { q: "Self-awareness in EQ means:", opts: ["Being aware of others' emotions","Knowing and understanding your own emotions and reactions","Motivating yourself during challenges","Building strong relationships"], ans: 1, exp: "Self-awareness is the ability to recognize and understand your own emotions, triggers, and how they affect your behavior." },
+      { q: "Empathy in emotional intelligence refers to:", opts: ["Feeling sorry for others","Understanding and sharing the feelings of others","Avoiding conflict","Being emotionally detached"], ans: 1, exp: "Empathy is the ability to understand and share the feelings of others — it's foundational for effective communication." },
+      { q: "Why is communication important for freelancers?", opts: ["It replaces the need for skills","It's critical for winning clients, delivering projects, and building reputation","It's only needed in meetings","It helps avoid invoicing"], ans: 1, exp: "Strong communication helps freelancers pitch services, manage client expectations, deliver great work, and build their reputation." },
+      { q: "An 'all-price' client is one who:", opts: ["Pays on time always","Focuses only on getting the lowest price","Asks too many questions","Always wants revisions"], ans: 1, exp: "An 'all-price' client prioritizes cost above everything else and may try to push your rates down significantly." },
+      { q: "Customer delight refers to:", opts: ["Meeting the minimum requirements","Exceeding client expectations to create a memorable positive experience","Charging clients more than expected","Delivering work late but perfectly"], ans: 1, exp: "Customer delight goes beyond satisfaction — it's about exceeding expectations to create a genuinely positive and memorable experience." },
+      { q: "Self-regulation in EQ means:", opts: ["Creating daily schedules","Managing your emotions and impulses effectively","Setting prices","Avoiding difficult conversations"], ans: 1, exp: "Self-regulation is the ability to control or redirect disruptive emotions and adapt to changing circumstances calmly." },
+      { q: "The communication process involves:", opts: ["Only the sender","Sender, message, channel, receiver, and feedback","Just speaking and listening","Emails and reports only"], ans: 1, exp: "Effective communication involves a sender, a message, the channel used, the receiver, and feedback to confirm understanding." },
+      { q: "How should you handle an 'I know it all' client?", opts: ["Argue with them","Ignore their input","Listen carefully and guide them gently with data and expertise","Always agree with them"], ans: 2, exp: "With know-it-all clients, it's best to listen carefully and use your expertise diplomatically to guide them toward the right solution." },
+    ]
+  },
+
+  cv_writing: {
+    title: "CV Writing & Interviewing Skills",
+    track: "Soft Skills",
+    color: "#6c63ff",
+    questions: [
+      { q: "What does ATS stand for?", opts: ["Automatic Tracking System","Applicant Tracking System","Application Testing Software","Assessment Talent Score"], ans: 1, exp: "ATS stands for Applicant Tracking System — software used by employers to screen CVs before a human reads them." },
+      { q: "Why is an ATS-friendly CV important?", opts: ["It looks more colorful","It helps your CV pass automated screening before reaching a recruiter","It's shorter to write","It replaces the need for a cover letter"], ans: 1, exp: "Many companies use ATS to filter CVs automatically. If your CV isn't optimized, it may never reach a human recruiter." },
+      { q: "Which of the following is a key section in a professional CV?", opts: ["Hobbies list only","Contact Information, Summary, Work Experience, Education, Skills","Social media followers","Physical description"], ans: 1, exp: "A strong CV includes Contact Information, a Summary or Objective, Work Experience, Education, Skills, and optionally Projects and Certifications." },
+      { q: "What is a Career Objective in a CV?", opts: ["A list of your achievements","A brief statement about your career goals and what you bring to the role","Your educational background","A description of your hobbies"], ans: 1, exp: "A career objective is a short, targeted statement outlining your professional goals and the value you bring to a specific role." },
+      { q: "To make a CV ATS-friendly, you should:", opts: ["Use decorative fonts and graphics","Use standard section headings and relevant keywords from the job description","Add a colored background","Use tables throughout the CV"], ans: 1, exp: "ATS systems scan for standard section labels and relevant keywords matching the job posting — fancy design can confuse the software." },
+      { q: "A 'Summary' section in a CV differs from a 'Career Objective' because:", opts: ["A Summary is longer","A Summary highlights your experience and value; an Objective focuses on your goals","They are the same thing","A Summary lists all your jobs"], ans: 1, exp: "A Summary highlights your background and value proposition, while a Career Objective focuses on what you want from the role." },
+      { q: "Which file format is generally recommended for ATS-friendly CVs?", opts: ["PNG image","PDF or plain .docx (not image-based)","JPG","PowerPoint"], ans: 1, exp: "PDF and simple .docx formats are machine-readable, while image-based files cannot be parsed by ATS systems." },
+      { q: "A competency-based interview question typically starts with:", opts: ["'What is your dream job?'","'Tell me about a time when...'","'How much do you want to earn?'","'Do you have a driver's license?'"], ans: 1, exp: "Competency-based questions ask for specific examples from past experience, typically starting with 'Tell me about a time when...'." },
+      { q: "The STAR method for answering interview questions stands for:", opts: ["Skill, Task, Achievement, Result","Situation, Task, Action, Result","Summary, Topic, Answer, Review","Strategy, Target, Approach, Review"], ans: 1, exp: "STAR stands for Situation, Task, Action, Result — a structured way to answer competency-based interview questions with clear examples." },
+      { q: "Tailoring your CV means:", opts: ["Changing the font and color","Adjusting content and keywords to match the specific job you're applying for","Adding more pages","Making it longer"], ans: 1, exp: "Tailoring your CV means customizing it for each application by aligning your skills and keywords with that specific job description." },
+    ]
+  },
+
+  presentation_skills: {
+    title: "Presentation Skills",
+    track: "Soft Skills",
+    color: "#6c63ff",
+    questions: [
+      { q: "What are the 3 main parts of a presentation structure?", opts: ["Introduction, Middle, End","Opening, Body, Closing","Brief, Detail, Summary","Hook, Points, Conclusion"], ans: 1, exp: "A well-structured presentation has an Opening (to hook the audience), a Body (main content), and a Closing (summary + call to action)." },
+      { q: "Why do many people fear presentations?", opts: ["They are boring to prepare","Fear of judgment, forgetting content, or negative reactions from the audience","They take too long","They require expensive tools"], ans: 1, exp: "Common fears include being judged, making mistakes in public, or receiving negative reactions — all of which can be managed with preparation." },
+      { q: "A good opening of a presentation should:", opts: ["Start with an apology","Hook the audience immediately with something compelling","List all your credentials","Read from your slides"], ans: 1, exp: "A strong opening immediately grabs the audience's attention — using a story, question, statistic, or bold statement." },
+      { q: "When delivering virtually, you should:", opts: ["Look at your own face on screen","Talk directly to the camera to simulate eye contact","Keep all lights off","Use only audio"], ans: 1, exp: "Looking at the camera when speaking creates the sense of eye contact for remote viewers, making virtual presentations more engaging." },
+      { q: "Which is true about effective visual aids?", opts: ["They should contain as much text as possible","They support your message without replacing your words","They should be identical to your spoken content","They must be black and white"], ans: 1, exp: "Visual aids complement and reinforce what you say — they shouldn't be read word-for-word but should support your key points visually." },
+      { q: "Body language in presentations includes:", opts: ["Only hand gestures","Posture, eye contact, facial expressions, and movement","The background of your slides","The font size on your slides"], ans: 1, exp: "Effective body language includes confident posture, appropriate eye contact, purposeful gestures, and facial expressions that match your message." },
+      { q: "Presentation Skills matter for freelancers because:", opts: ["Clients don't care how you present","They help win clients, pitch ideas, and communicate project updates confidently","They are required by law","They replace the need for a portfolio"], ans: 1, exp: "Strong presentation skills help freelancers pitch for projects, present work to clients, and communicate ideas persuasively." },
+      { q: "A closing should include:", opts: ["A new topic introduction","Summary of ideas, key message, questions, and call to action","An apology for speaking too long","Random facts"], ans: 1, exp: "An effective closing summarizes the key ideas, delivers a memorable message, opens for questions, and ends with a clear call to action." },
+      { q: "Planning your presentation involves:", opts: ["Only designing slides","Understanding your audience, purpose, content, and delivery strategy","Memorizing every word","Using the most slides possible"], ans: 1, exp: "Good presentation planning starts with knowing your audience and purpose before designing content and delivery." },
+      { q: "Which statement about effective presenters is true?", opts: ["They never use notes","They are confident, clear, engaging, and audience-focused","They always speak fast","They memorize every word"], ans: 1, exp: "Effective presenters are confident, communicate clearly, engage their audience, and keep the audience's needs at the center." },
+    ]
+  },
+
+  employment_coaching: {
+    title: "Employment Coaching",
+    track: "Soft Skills",
+    color: "#6c63ff",
+    questions: [
+      { q: "Employment coaching primarily helps individuals:", opts: ["Learn software coding","Navigate the job market and develop strategies to find and succeed in employment","Manage business accounts","Design marketing campaigns"], ans: 1, exp: "Employment coaching focuses on helping people identify opportunities, refine their approach, and succeed in their career journey." },
+      { q: "A coach differs from a mentor because:", opts: ["A coach has more experience","A coach asks powerful questions to help you find your own answers; a mentor shares their experience","Mentors are only for students","Coaches are always paid"], ans: 1, exp: "Coaching uses questioning to unlock the coachee's own insights, while mentoring involves sharing personal experience and advice." },
+      { q: "Personal development planning is important because:", opts: ["It impresses employers superficially","It helps you identify skill gaps and take intentional steps to grow","It is required by all companies","It eliminates the need for formal education"], ans: 1, exp: "A personal development plan helps you map out where you are, where you want to go, and what skills you need to develop to get there." },
+      { q: "Which is a key mindset for successful employment?", opts: ["Fixed mindset — abilities are set","Growth mindset — skills can be developed through effort","Passive mindset — wait for opportunities","Negative mindset — expect the worst"], ans: 1, exp: "A growth mindset — the belief that abilities can improve through effort and learning — is foundational to career success." },
+      { q: "Work-life balance in employment means:", opts: ["Working as many hours as possible","Managing your professional responsibilities and personal wellbeing effectively","Ignoring personal needs for work","Only working part-time"], ans: 1, exp: "Work-life balance means managing your career and personal life in a way that supports long-term productivity and wellbeing." },
+      { q: "Building professional habits includes:", opts: ["Being inconsistent with deadlines","Showing up on time, communicating proactively, and delivering quality work","Avoiding feedback","Doing the minimum required"], ans: 1, exp: "Professional habits like punctuality, proactive communication, and quality output form the foundation of a strong work reputation." },
+      { q: "Feedback in a professional context should be:", opts: ["Ignored if negative","Welcomed as a tool for improvement and growth","Only given, never received","Only received from supervisors"], ans: 1, exp: "Treating feedback — especially constructive criticism — as a growth opportunity is a key professional habit." },
+      { q: "Networking in job seeking helps by:", opts: ["Replacing the need for a CV","Connecting you with opportunities and people who can support your career","Making you instantly employed","Avoiding the application process"], ans: 1, exp: "Networking builds relationships that can open doors to opportunities, referrals, and industry insights not available through job boards alone." },
+    ]
+  },
+
+  // ── FREELANCING TRACK ──
+
+  planning_freelancers: {
+    title: "Planning for Freelancers",
+    track: "Freelancing",
+    color: "#ff6584",
+    questions: [
+      { q: "What is freelancing?", opts: ["Working full-time for one employer","Working independently by offering services on short-term or project-based contracts","Running a large company","Working only from an office"], ans: 1, exp: "Freelancing means working independently, offering specific services to clients on short-term or project-based contracts without a long-term employer commitment." },
+      { q: "Which is a key feature of freelancing?", opts: ["Fixed 9–5 hours","Flexible working hours and freedom to choose clients","One employer for life","No opportunity for earning more"], ans: 1, exp: "Freelancers benefit from flexible working hours, freedom to choose projects and clients, and the ability to work remotely." },
+      { q: "A major difference between freelancing and a full-time job is:", opts: ["Freelancers earn less","Freelancers have multiple clients instead of one employer","Full-time employees work from home","Freelancers have no skills"], ans: 1, exp: "A key difference is that freelancers work with multiple clients on a project basis, whereas full-time employees work for one employer." },
+      { q: "Planning for a freelancing career involves:", opts: ["Only setting up a website","Identifying your skills, target clients, rates, and service offerings","Waiting for clients to find you","Copying a competitor's services"], ans: 1, exp: "Freelance planning includes defining your niche, identifying target clients, setting your rates, and structuring your service offerings." },
+      { q: "What is a key advantage of freelancing?", opts: ["Guaranteed monthly salary","Paid annual leave","Flexibility, independence, and potential for higher earnings","Always having a team"], ans: 2, exp: "Freelancing offers flexibility, independence, the ability to choose your projects, and the potential to earn more than a fixed salary." },
+      { q: "A challenge of freelancing is:", opts: ["Having too many benefits","Income instability and managing your own taxes and insurance","Always working with the same team","Never having deadlines"], ans: 1, exp: "Freelancers face challenges like inconsistent income, managing their own finances, and lacking the benefits of full-time employment." },
+      { q: "Setting up a freelance plan should start with:", opts: ["Signing up to all platforms","Understanding your strengths and the services you can confidently offer","Immediately applying for every job","Buying expensive equipment"], ans: 1, exp: "Before anything else, identify your skills and what services you can offer confidently — this defines your freelance direction." },
+      { q: "Freelancers are paid:", opts: ["Monthly salary only","Per project or task completed","By hourly wage only","Only after 6 months"], ans: 1, exp: "Freelancers are typically paid per project, per task, or per hour — not through a fixed monthly salary." },
+      { q: "Which is a con of freelancing?", opts: ["Freedom to work anywhere","No fixed benefits like health insurance or paid leave","Working with interesting projects","Potential for high income"], ans: 1, exp: "Freelancers typically don't receive employee benefits like health insurance, paid leave, or retirement contributions from an employer." },
+      { q: "Market awareness helps a freelancer by:", opts: ["Making them popular","Revealing which skills are in demand and where to find clients","Replacing the need for skills","Guaranteeing clients"], ans: 1, exp: "Understanding the freelancing market — what's in demand, which platforms to use, and current trends — helps freelancers position themselves effectively." },
+    ]
+  },
+
+  portfolio_building: {
+    title: "Portfolio Building",
+    track: "Freelancing",
+    color: "#ff6584",
+    questions: [
+      { q: "What is a freelance portfolio?", opts: ["A collection of your social media posts","A curated showcase of your best work, skills, and past projects","A list of your education only","Your freelancing price list"], ans: 1, exp: "A portfolio is a curated collection of your best work that demonstrates your skills, style, and experience to potential clients." },
+      { q: "Why is a portfolio important for a new freelancer?", opts: ["It replaces a CV entirely","It provides proof of your skills when you have limited work experience","It's required by law","It automatically gets you clients"], ans: 1, exp: "A portfolio lets you show — not just tell — clients what you can do, which is especially critical when you're just starting out." },
+      { q: "If you have no client work yet, your portfolio can include:", opts: ["Nothing — wait for real clients","Personal projects, mock projects, or work done for practice","Only certifications","Only your academic work"], ans: 1, exp: "You can build an initial portfolio with personal passion projects, spec work (created to demonstrate skills), or mock projects." },
+      { q: "A strong portfolio should:", opts: ["Include every piece of work you've ever done","Be curated to show only your best, most relevant work","Focus only on old projects","Avoid showing any process or case studies"], ans: 1, exp: "Quality beats quantity — a strong portfolio is carefully curated to show your best and most relevant work for your target clients." },
+      { q: "For a digital portfolio, which is a recommended platform?", opts: ["Only WhatsApp","Behance, Notion, a personal website, or GitHub (depending on your field)","Google Maps","A printed brochure only"], ans: 1, exp: "Depending on your field, platforms like Behance (designers), GitHub (developers), or a personal website are great for showcasing your work digitally." },
+      { q: "What should you include with each portfolio piece?", opts: ["Your personal opinions on the client","Context: the brief, your approach, the outcome, and your role","The client's private information","Nothing extra needed"], ans: 1, exp: "Each portfolio item should include context — the challenge, your approach, your specific contribution, and the result or outcome." },
+      { q: "Keeping your portfolio updated means:", opts: ["Changing the design every week","Regularly adding new work and removing outdated pieces","Adding more text","Changing your prices frequently"], ans: 1, exp: "Regularly refreshing your portfolio with recent work and removing outdated pieces keeps it relevant and professional." },
+      { q: "A portfolio helps build trust with potential clients because:", opts: ["It shows you're expensive","It provides tangible evidence of your capabilities and work quality","It lists your opinions","It replaces communication"], ans: 1, exp: "Seeing real examples of your work gives potential clients confidence in your abilities, making it much easier to win new projects." },
+    ]
+  },
+
+  freelancing_platforms: {
+    title: "Freelancing Platforms",
+    track: "Freelancing",
+    color: "#ff6584",
+    questions: [
+      { q: "What are freelancing platforms?", opts: ["Websites for free online courses","Online marketplaces connecting freelancers with clients needing specific projects","Social networks for professionals","Job boards for full-time employment only"], ans: 1, exp: "Freelancing platforms are online marketplaces that connect freelancers with clients, providing tools for finding work, submitting proposals, and processing payments." },
+      { q: "Upwork is an example of:", opts: ["A niche platform","A general freelancing platform open to multiple professions","A design-only platform","A local Egyptian platform"], ans: 1, exp: "Upwork is a general platform offering work across many professions and industries, from writing to software development." },
+      { q: "A niche platform is one that:", opts: ["Has the most users","Focuses on a specific industry or skill, like design or writing","Is only for beginners","Works only locally"], ans: 1, exp: "Niche platforms cater to a specific skill set or industry — for example, 99designs for designers or Toptal for top-tier developers." },
+      { q: "When creating a profile on a freelancing platform, you should:", opts: ["Leave sections blank to save time","Complete all sections with a professional photo, clear bio, and relevant skills","Use a generic bio","Focus only on pricing"], ans: 1, exp: "A complete, professional profile significantly increases your chances of being found and hired by clients on any platform." },
+      { q: "A 'Gig' on platforms like Fiverr refers to:", opts: ["A live concert","A packaged service you offer at a defined scope and price","A full-time contract","A client's project brief"], ans: 1, exp: "A Gig is a specific, packaged service you create on Fiverr, defining exactly what you'll deliver, the timeframe, and the price." },
+      { q: "Building reputation on a freelancing platform depends heavily on:", opts: ["How many platforms you join","Client reviews, ratings, and consistent delivery quality","The number of proposals you send","Your profile picture"], ans: 1, exp: "Your reputation on freelancing platforms is built through positive client reviews, high ratings, and consistently delivering quality work on time." },
+      { q: "To avoid fraud on freelancing platforms, you should:", opts: ["Accept all payment methods","Use the platform's built-in payment and communication tools","Share your personal banking details","Work without any contract"], ans: 1, exp: "Always use the platform's official payment and messaging systems — this protects you and gives you recourse if disputes arise." },
+      { q: "A proposal on a freelancing platform should:", opts: ["Be copied from a template without customization","Be tailored to the specific client and project, showing you've read their needs","List all your past jobs","Be as short as one sentence"], ans: 1, exp: "A winning proposal is personalized — it addresses the specific project, demonstrates you understand the client's needs, and clearly explains your approach." },
+      { q: "Which is a local (Arab-region) freelancing platform?", opts: ["Toptal","Khamsat (خمسات)","PeoplePerHour","Dribbble"], ans: 1, exp: "Khamsat is a popular Arabic-language freelancing platform widely used across the Arab world." },
+      { q: "Managing clients well on freelancing platforms requires:", opts: ["Avoiding communication after getting hired","Clear communication, meeting deadlines, and managing expectations proactively","Accepting all revision requests without limit","Ignoring negative feedback"], ans: 1, exp: "Successful freelancers communicate clearly, deliver on time, set expectations upfront, and handle feedback professionally." },
+    ]
+  },
+
+  budgeting_pricing: {
+    title: "Budgeting, Pricing & Proposals",
+    track: "Freelancing",
+    color: "#ff6584",
+    questions: [
+      { q: "What is pricing in freelancing?", opts: ["Setting random numbers","Determining the fair monetary value for your services based on skills, time, and expertise","Copying competitors' prices exactly","Whatever the client offers"], ans: 1, exp: "Pricing is the process of setting a fair rate that reflects your skills, experience, time, and the market — key to sustaining your freelance business." },
+      { q: "Which factor does NOT typically influence freelance pricing?", opts: ["Skills and expertise","Market demand","Your favorite color","Competition in your field"], ans: 2, exp: "Pricing is influenced by your skills, market demand, competition, project complexity, and delivery time — not personal preferences." },
+      { q: "A budget for a freelancer refers to:", opts: ["The client's total company revenue","A financial plan tracking income and expenses to ensure the business stays sustainable","How much you spend on equipment only","A government grant"], ans: 1, exp: "A freelancer's budget is a financial plan that tracks income, expenses, and savings — essential for sustainable self-employment." },
+      { q: "What is an hourly rate?", opts: ["A fixed price for a project","Charging based on the number of hours worked","Charging based on deliverables","A monthly retainer"], ans: 1, exp: "An hourly rate means you charge for the actual time spent on a project, billing per hour worked." },
+      { q: "What is a fixed price (project-based) pricing model?", opts: ["Charging per hour worked","Agreeing on one total price for the entire project regardless of time spent","Charging based on the client's budget","Offering discounts always"], ans: 1, exp: "Fixed pricing means you and the client agree on one price for the entire deliverable — giving clients cost certainty and you predictability." },
+      { q: "A retainer agreement means:", opts: ["The client pays after the project","The client pays a recurring fee to retain your services over a set period","You work for free initially","You invoice randomly"], ans: 1, exp: "A retainer is when a client pays you a recurring fee (monthly, for example) to have ongoing access to your services." },
+      { q: "Why is budgeting important for freelancers?", opts: ["It's required by the platform","It helps manage inconsistent income, plan for taxes, and ensure financial stability","It impresses clients","It reduces your workload"], ans: 1, exp: "Unlike salaried employees, freelancers have variable income, so budgeting helps manage cash flow, plan for slow periods, and handle taxes." },
+      { q: "Payment methods for freelancers commonly include:", opts: ["Only cash","Bank transfers, PayPal, Wise, or platform-specific payment systems","Barter only","Government checks"], ans: 1, exp: "Freelancers use a variety of payment methods including bank transfers, PayPal, Wise, Payoneer, and platform built-in payment systems." },
+      { q: "A project schedule in freelancing helps:", opts: ["Confuse clients","Break a project into milestones with clear deadlines and payments tied to deliverables","Avoid signing contracts","Work without planning"], ans: 1, exp: "A project schedule with milestones and tied payments keeps both the freelancer and client aligned on timelines and progress." },
+      { q: "Underpricing your services can lead to:", opts: ["More clients and higher income","Burnout, attracting low-quality clients, and devaluing your work","Faster career growth","Better reputation"], ans: 1, exp: "Underpricing often attracts difficult clients, signals low quality, and can lead to overwork and burnout without sustainable income." },
+    ]
+  },
+
+  negotiation_skills: {
+    title: "Negotiation Skills",
+    track: "Freelancing",
+    color: "#ff6584",
+    questions: [
+      { q: "Negotiation in freelancing is primarily about:", opts: ["Arguing until you win","Finding a mutually beneficial agreement with your client on price, scope, or terms","Accepting whatever the client offers","Avoiding all difficult conversations"], ans: 1, exp: "Effective negotiation aims to reach a win-win agreement — one that works for both you and the client on terms like price, scope, and timelines." },
+      { q: "BATNA stands for:", opts: ["Best Alternative To Negotiated Agreement","Budget Allocated To New Accounts","Basic Agreement Terms and Notices Act","Business And Trade Negotiation Approach"], ans: 0, exp: "BATNA — Best Alternative To a Negotiated Agreement — is your backup plan if negotiations fail. Knowing your BATNA strengthens your position." },
+      { q: "When a client pushes back on your price, you should first:", opts: ["Immediately lower your rate","Understand their concern and calmly explain your value","Walk away immediately","Accept without question"], ans: 1, exp: "Price pushback is normal — start by understanding the client's constraints, then clearly articulate the value your price represents." },
+      { q: "Scope creep refers to:", opts: ["A client who pays late","When project requirements gradually expand beyond the original agreement without additional payment","A platform bug","An increase in your skills"], ans: 1, exp: "Scope creep happens when more work is added to a project beyond the original agreed scope, often without additional compensation if not managed." },
+      { q: "To prevent scope creep, a freelancer should:", opts: ["Avoid writing contracts","Clearly define deliverables, revisions, and boundaries in a written agreement upfront","Accept all changes silently","Never discuss the project scope"], ans: 1, exp: "A clear, detailed contract specifying exactly what's included (and excluded) is the most effective way to prevent scope creep." },
+      { q: "Knowing your market rate before negotiating helps you:", opts: ["Set random prices","Negotiate with confidence, backed by data on what comparable work costs","Copy your competitor exactly","Avoid all negotiation"], ans: 1, exp: "Understanding market rates gives you a factual basis for your pricing and helps you negotiate assertively without underselling yourself." },
+      { q: "Active listening in negotiation means:", opts: ["Waiting for your turn to speak","Fully understanding the client's needs and concerns before responding","Agreeing with everything","Speaking faster"], ans: 1, exp: "Active listening involves genuinely understanding the other party's perspective before crafting your response — it builds trust and often leads to better outcomes." },
+      { q: "A win-win negotiation outcome means:", opts: ["One party gets everything they want","Both parties feel the agreement is fair and satisfactory","The freelancer always compromises","The client always wins"], ans: 1, exp: "Win-win negotiation aims for an outcome where both the freelancer and client feel they've reached a fair and workable agreement." },
+    ]
+  },
+
+  kickstart_profile: {
+    title: "Kickstart Your Freelance Profile",
+    track: "Freelancing",
+    color: "#ff6584",
+    questions: [
+      { q: "Your freelance profile represents:", opts: ["Your physical resume only","Your digital identity — a combination of your resume, portfolio, and personal brand in one place","A list of platforms you joined","Your pricing strategy"], ans: 1, exp: "Your freelance profile is your digital identity — it showcases your services, skills, credibility, and brand all in one place." },
+      { q: "USP stands for:", opts: ["Universal Service Provider","Unique Selling Proposition","User Service Platform","Underrated Skills Profile"], ans: 1, exp: "USP stands for Unique Selling Proposition — the specific reason why clients should choose YOU over other freelancers." },
+      { q: "Key elements of a strong freelance profile include:", opts: ["A blurry photo and vague bio","Professional photo, clear bio, defined skills, portfolio samples, and reviews","Only a list of tools you know","Your personal life history"], ans: 1, exp: "A strong profile needs a professional photo, a clear bio explaining what you do and for whom, skills, portfolio, and ideally reviews." },
+      { q: "Why is crafting a strong bio important?", opts: ["Clients never read bios","It's the first impression that tells clients who you are, what you offer, and why they should hire you","It's required by the platform","It replaces your portfolio"], ans: 1, exp: "Your bio is often the first thing clients read — a strong, clear bio immediately communicates your value and builds initial trust." },
+      { q: "A freelancer's USP should focus on:", opts: ["Being the cheapest option","What specifically makes your services valuable and different from competitors","How many years you've been alive","The tools you use"], ans: 1, exp: "Your USP articulates your specific value — why you're the right choice for a particular type of client or problem." },
+      { q: "When publishing services on a freelancing platform, you should:", opts: ["Use vague titles to attract more clients","Use clear, specific service titles and descriptions targeting a defined niche","List every possible service","Avoid adding any portfolio work"], ans: 1, exp: "Specific, niche-targeted service listings with clear titles and descriptions attract the right clients and outperform vague, generic offerings." },
+      { q: "A final checklist before going live on a freelancing platform should confirm:", opts: ["That you've messaged all competitors","That your profile is complete, professional, and targeted with at least one service and portfolio piece","That you have 100 connections","That your bio is over 500 words"], ans: 1, exp: "Before going live, confirm that your profile photo, bio, services, skills, and at least one portfolio piece are polished and complete." },
+      { q: "Getting your first review on a freelancing platform is important because:", opts: ["Reviews only matter after 100 jobs","Social proof builds trust and makes future clients more likely to hire you","Reviews are not visible to clients","You only need reviews for big projects"], ans: 1, exp: "Your first reviews are critical — social proof significantly increases trust and conversion rates for future potential clients." },
+      { q: "Which of the following is a good strategy for getting your first freelancing client?", opts: ["Waiting for clients to find you with no effort","Proactively sending tailored proposals, offering competitive rates, and leveraging personal network","Immediately raising your rates","Copying another freelancer's profile"], ans: 1, exp: "Getting started often requires proactive outreach — personalized proposals, competitive introductory rates, and leveraging your existing network for referrals." },
+      { q: "Evaluating yourself as a freelancer regularly involves:", opts: ["Comparing yourself only to celebrities","Reviewing your completed projects, client feedback, skills gaps, and setting new goals","Deleting negative reviews","Only tracking income"], ans: 1, exp: "Regular self-evaluation helps you improve — reviewing your work quality, client feedback, skills, and goals keeps your freelance career progressing." },
+    ]
+  },
+
+  // ── ENTREPRENEURSHIP TRACK ──
+
+  intro_entrepreneurship: {
+    title: "Introduction to Entrepreneurship",
+    track: "Entrepreneurship",
+    color: "#43e97b",
+    questions: [
+      { q: "Entrepreneurship is defined as:", opts: ["Working for a large corporation","The process of developing, organizing, and running a new business venture to generate profit while bearing financial risks","Managing a government department","Freelancing part-time"], ans: 1, exp: "Entrepreneurship involves developing, organizing, and running a new business to generate profit — while accepting the associated financial risks." },
+      { q: "Who is an entrepreneur?", opts: ["Someone who only invests money in others' businesses","Someone with the ability and desire to start and manage a business, taking on financial, social, and personal risks","A salaried employee","A government official"], ans: 1, exp: "An entrepreneur is someone who starts and manages their own business, driven by vision and willing to take on the associated risks." },
+      { q: "Which is a key entrepreneurial characteristic?", opts: ["Avoiding risk entirely","Having a vision for change and the persistence to achieve it","Preferring routine over innovation","Relying on others to make decisions"], ans: 1, exp: "Entrepreneurs are characterized by a clear vision, persistence, risk-taking, creativity, and the drive to turn ideas into reality." },
+      { q: "One individual impact of entrepreneurship is:", opts: ["Guaranteed job security","Financial independence and the freedom to test and grow ideas","Fixed working hours","No need for skill development"], ans: 1, exp: "Entrepreneurship can lead to financial independence, skill development, career opportunities, and the freedom to innovate." },
+      { q: "How does entrepreneurship impact the economy?", opts: ["It reduces employment","It creates jobs, introduces new products/services, and drives innovation","It increases taxes for everyone","It slows economic growth"], ans: 1, exp: "Entrepreneurs create new businesses that generate jobs, introduce innovative products and services, and stimulate economic growth." },
+      { q: "Entrepreneurship is not just about starting a business — it's also about:", opts: ["Following existing rules only","Innovation and risk-taking to solve problems and create value","Copying successful competitors","Avoiding all competition"], ans: 1, exp: "Entrepreneurship extends beyond starting a company — it's fundamentally about innovation, creative problem-solving, and value creation." },
+      { q: "What distinguishes an entrepreneur from a regular employee?", opts: ["An entrepreneur earns more always","An entrepreneur takes ownership, financial risk, and drives their own direction","Entrepreneurs work fewer hours","Employees take more risks"], ans: 1, exp: "The key distinction is ownership and risk — entrepreneurs create and drive their own ventures, bearing the associated financial and personal risks." },
+      { q: "Entrepreneurial characteristics include:", opts: ["Passive decision-making and risk aversion","Risk-taking, innovation, persistence, and leadership","Always working alone","Needing no capital"], ans: 1, exp: "Successful entrepreneurs tend to be risk-tolerant, innovative, persistent, and capable leaders who can motivate themselves and others." },
+      { q: "Which of the following is a social impact of entrepreneurship?", opts: ["Decreasing community involvement","Creating solutions to social problems and driving societal change","Increasing unemployment","Reducing access to services"], ans: 1, exp: "Social entrepreneurship and business innovation can address community problems, improve quality of life, and drive positive societal change." },
+      { q: "Why is financial risk a core element of entrepreneurship?", opts: ["Because entrepreneurs are careless with money","Because starting a business requires investing resources without guaranteed returns","Because banks force them to","Because all entrepreneurs are wealthy"], ans: 1, exp: "Entrepreneurship inherently involves financial risk — entrepreneurs invest time, money, and resources without any guarantee of success or return." },
+    ]
+  },
+
+  bmc: {
+    title: "Business Model Canvas (BMC)",
+    track: "Entrepreneurship",
+    color: "#43e97b",
+    questions: [
+      { q: "A Business Model describes:", opts: ["The physical layout of an office","The logic of how a company creates, delivers, and captures value","A company's marketing budget only","The daily work schedule of employees"], ans: 1, exp: "A business model explains how a company creates value for customers, delivers it, and captures revenue from it." },
+      { q: "The Business Model Canvas has how many building blocks?", opts: ["5","7","9","12"], ans: 2, exp: "The Business Model Canvas consists of 9 building blocks that together describe how a company creates and captures value." },
+      { q: "Which of the following is a BMC building block?", opts: ["Employee satisfaction score","Customer Segments","Company logo","Office location"], ans: 1, exp: "Customer Segments is one of the 9 BMC blocks — it defines the different groups of people or organizations a company aims to serve." },
+      { q: "Value Proposition in the BMC answers:", opts: ["How much the product costs","What value you create and what problem you solve for your customers","Who your competitors are","What equipment you use"], ans: 1, exp: "The Value Proposition describes the bundle of products/services that create value for your specific customer segments." },
+      { q: "Revenue Streams in the BMC represents:", opts: ["The company's expenses","How the company generates cash from each customer segment","Employee salaries","The number of clients"], ans: 1, exp: "Revenue Streams describe how the business makes money from each customer segment — through sales, subscriptions, licensing, etc." },
+      { q: "Key Partners in the BMC refers to:", opts: ["Your most loyal customers","The network of suppliers, alliances, and partners that make your business model work","Your employees","Investors only"], ans: 1, exp: "Key Partners are the external companies and suppliers whose resources, activities, or expertise are needed to make your business model function." },
+      { q: "Channels in the BMC describe:", opts: ["Social media only","How you communicate with and deliver your value proposition to customer segments","Your production process","Your pricing strategy"], ans: 1, exp: "Channels describe how your company reaches its customer segments to deliver your value proposition — including sales, marketing, and distribution channels." },
+      { q: "Cost Structure in the BMC covers:", opts: ["Revenue only","All costs incurred to operate the business model","Your pricing strategy","Your profit margin"], ans: 1, exp: "The Cost Structure describes all costs involved in operating the business model — including fixed and variable costs." },
+      { q: "Why is the BMC useful for entrepreneurs?", opts: ["It replaces a full business plan in all contexts","It provides a one-page visual overview of how the business works, making it easy to analyze and adapt","It guarantees investor funding","It removes the need for market research"], ans: 1, exp: "The BMC gives a clear, visual snapshot of your entire business model on one page — making it easy to spot gaps, test assumptions, and communicate to stakeholders." },
+      { q: "In the Netflix BMC example, what was Netflix's main Revenue Stream?", opts: ["DVD sales","Subscription-based recurring revenue","Advertising","Government grants"], ans: 1, exp: "Netflix's primary revenue model is subscription-based, charging customers a recurring fee for access to its streaming content." },
+    ]
+  },
+
+  marketing_startups: {
+    title: "Marketing for Startups",
+    track: "Entrepreneurship",
+    color: "#43e97b",
+    questions: [
+      { q: "Marketing is defined as:", opts: ["Only running social media ads","The process of promoting and selling products/services by understanding customer needs, creating value, and building relationships","Designing a logo","Hiring salespeople"], ans: 1, exp: "Marketing encompasses understanding customer needs, creating valuable offerings, and communicating them effectively to build lasting customer relationships." },
+      { q: "Why does marketing matter for startups?", opts: ["It's optional for startups","It creates awareness, builds brand identity, and attracts and retains customers","It only matters for large companies","It replaces the need for a good product"], ans: 1, exp: "For startups, marketing is essential — it gets the word out, builds a recognizable brand, and converts potential customers into loyal ones." },
+      { q: "A Marketing Plan is:", opts: ["A social media calendar only","A roadmap guiding marketing activities to reach target customers effectively","A pricing sheet","An investor pitch deck"], ans: 1, exp: "A marketing plan is a strategic document outlining your goals, target audience, strategies, budget, timeline, and how you'll measure success." },
+      { q: "What does 'Target Market' mean in a marketing plan?", opts: ["The country where you sell","The specific group of people your product/service is designed to serve","Everyone in the world","Your competition"], ans: 1, exp: "Your target market is the specific, defined group of customers most likely to buy your product/service — defined by demographics, needs, and behaviors." },
+      { q: "SMART goals in a marketing plan are:", opts: ["Simple and easy to achieve","Specific, Measurable, Achievable, Relevant, and Time-bound","Social Media, Marketing, Analytics, Reach, Targeting","Short, Motivated, Active, Reliable, Tested"], ans: 1, exp: "Marketing objectives should be SMART: Specific, Measurable, Achievable, Relevant, and Time-bound — ensuring goals are clear and trackable." },
+      { q: "An Executive Summary in a marketing plan is:", opts: ["The longest section written first","A brief overview written last but placed first, summarizing the plan's key goals and approach","A detailed financial forecast","The list of all marketing channels"], ans: 1, exp: "The Executive Summary is a one-page snapshot of your entire plan — written last but placed first to give readers a quick overview." },
+      { q: "Metrics & Evaluation in a marketing plan help you:", opts: ["Hire more staff","Measure whether your marketing activities are achieving their goals","Design your logo","Choose your pricing"], ans: 1, exp: "Metrics allow you to track the effectiveness of your marketing activities and make data-driven decisions to optimize your strategy." },
+      { q: "A Budget in a marketing plan is used to:", opts: ["Track employee salaries only","Allocate resources across your marketing activities to maximize impact within financial constraints","Avoid spending money","Set product prices"], ans: 1, exp: "A marketing budget allocates your available resources across activities like advertising, content, events, and tools to achieve your goals efficiently." },
+      { q: "Understanding your target market helps a startup:", opts: ["Ignore customer feedback","Tailor messages and tactics to reach the right customers more effectively","Charge any price","Skip product development"], ans: 1, exp: "Knowing exactly who your customer is allows you to craft messages that resonate, choose the right channels, and allocate your marketing budget wisely." },
+      { q: "Strategies & Tactics in a marketing plan describe:", opts: ["Your company's history","How you will achieve your marketing goals — including specific activities and approaches","Your financial statements","Your team structure"], ans: 1, exp: "This section outlines the specific methods and activities you'll use to achieve your marketing objectives — like content marketing, partnerships, or social ads." },
+    ]
+  },
+
+  financial_planning: {
+    title: "Financial Planning for Startups",
+    track: "Entrepreneurship",
+    color: "#43e97b",
+    questions: [
+      { q: "Startup costs are:", opts: ["Only ongoing monthly expenses","The total expenses a new business must cover before it begins operating and generating revenue","The salary of the founder","Investment returns"], ans: 1, exp: "Startup costs include all expenses — both one-time and early recurring — that a business must cover before it starts generating revenue." },
+      { q: "A one-time startup cost example is:", opts: ["Monthly rent","Business registration and licensing fees","Staff salaries","Internet bills"], ans: 1, exp: "One-time costs are initial investments like registration fees, equipment purchases, website development, and legal fees." },
+      { q: "A recurring startup cost example is:", opts: ["Equipment purchase","Office furniture","Monthly rent and utilities","Website development"], ans: 2, exp: "Recurring costs are ongoing expenses like rent, salaries, utilities, and software subscriptions needed to keep the business running." },
+      { q: "Break-even analysis determines:", opts: ["How much profit you'll make in year one","When total revenue equals total costs — the point where the business becomes financially sustainable","Your target market size","How many employees to hire"], ans: 1, exp: "Break-even analysis calculates the point at which your revenue covers all your costs — signaling when the business stops losing money." },
+      { q: "Why is break-even analysis important for startups?", opts: ["It guarantees profit","It helps founders understand sustainability, guides pricing decisions, and supports investor communication","It sets employee salaries","It replaces a business plan"], ans: 1, exp: "Break-even analysis is crucial for setting realistic targets, proving viability to investors, and understanding when the business becomes financially sustainable." },
+      { q: "Financial planning helps a startup secure funding because:", opts: ["Investors trust anyone","It demonstrates that founders understand their costs, revenue model, and path to profitability","It shows the startup spends a lot of money","It proves the business is already profitable"], ans: 1, exp: "Well-structured financial planning shows investors that founders have a clear understanding of economics, risks, and the path to sustainability." },
+      { q: "Fixed costs are:", opts: ["Costs that change with production volume","Costs that remain constant regardless of how much the business produces or sells","Only salary costs","Marketing costs"], ans: 1, exp: "Fixed costs remain the same regardless of output — like rent, insurance, or salaried staff — unlike variable costs that change with production." },
+      { q: "Variable costs are:", opts: ["Costs that never change","Costs that change proportionally with production volume or sales","Only advertising costs","One-time setup costs"], ans: 1, exp: "Variable costs change directly with production or sales volume — like raw materials, packaging, or commission-based payments." },
+      { q: "A Cash Flow statement tracks:", opts: ["Your brand identity","The actual movement of money in and out of the business over a period","Only your bank balance","Your competitors' finances"], ans: 1, exp: "A cash flow statement shows when and how cash enters and leaves your business — critical for managing day-to-day financial health." },
+      { q: "Overestimating profits early in a startup is dangerous because:", opts: ["It attracts too many investors","It can lead to poor spending decisions, unpreparedness for slow periods, and eventual cash flow crises","It motivates the team","It increases product quality"], ans: 1, exp: "Overestimating early profits can cause a startup to overspend, underprepare for challenges, and face serious financial difficulties when reality doesn't match projections." },
+    ]
+  },
+
+  // ── NEW OFFICIAL QUIZZES (from uploaded PDFs) ──
+
+  official_quiz_1b: {
+    title: "Official Quiz 1.1 — Career Planning & Personal Branding",
+    track: "Soft Skills",
+    color: "#f9ca24",
+    questions: [
+      { q: "Benefits of freelancing include:", opts: ["Exposure to global brands", "Fixed working hours", "Health insurance"], ans: 0, exp: "Exposure to global brands is a genuine benefit of freelancing — you can work with clients worldwide. Fixed hours and health insurance are typically employee benefits, not freelancing perks." },
+      { q: "When you personalize the interaction, this is considered:", opts: ["Developing your content", "Defining a goal", "Networking"], ans: 2, exp: "Personalizing interactions — making connections feel genuine and tailored — is the essence of effective networking." },
+      { q: "…… are examples of values.", opts: ["All the above", "Competition", "Making an impact", "Job stability"], ans: 0, exp: "Job stability, competition (drive), and making an impact are all examples of personal values that shape your career direction and choices." },
+      { q: "…… is the first step in your five-step personal branding framework.", opts: ["Defining your goals", "Designing your brand", "Determining your platforms"], ans: 0, exp: "The personal branding framework begins with Defining your goals — knowing what you want to achieve shapes every other branding decision." },
+      { q: "Career Planning is the process one takes to:", opts: ["Match your career goals to your financial needs", "Match your skills to existing jobs or careers", "All of the above.", "To decide and pursue their desired career path."], ans: 2, exp: "Career planning is a comprehensive process — it involves matching skills to careers, aligning with financial goals, AND pursuing your desired path. All of the above applies." },
+      { q: "Networking is personal. Forming a new relationship involves dedicating time to making connections.", opts: ["True", "False"], ans: 0, exp: "True — networking is a personal, time-investment activity. Genuine professional relationships require real effort and consistent engagement." },
+      { q: "Some of the skills you need to consider matching market trends are:", opts: ["Interpersonal skills", "Continuous learning", "Self-management", "All the above"], ans: 3, exp: "Staying aligned with market trends requires a combination of interpersonal skills, continuous learning, and self-management — all three work together." },
+      { q: "Finding a good job with a good salary is an example of a SMART goal.", opts: ["True", "False"], ans: 1, exp: "False — this is vague and not measurable. A SMART goal must be Specific (which job?), Measurable (what salary?), with a clear timeframe and action plan." },
+      { q: "The term 'gig' is a slang word for a job that lasts a specified period of time.", opts: ["True", "False"], ans: 0, exp: "True — 'gig' originally came from music (a one-night performance) and now refers to any short-term, project-based work — the foundation of the gig economy." },
+      { q: "Which of the following skills help you match market trends?", opts: ["Interpersonal skills only", "Continuous learning only", "Self-management only", "All the above"], ans: 3, exp: "Matching market trends requires a full toolkit: interpersonal skills to collaborate, continuous learning to stay current, and self-management to stay disciplined." },
+    ]
+  },
+
+  official_quiz_2b: {
+    title: "Official Quiz 2.2 — Communication & EQ",
+    track: "Soft Skills",
+    color: "#f9ca24",
+    questions: [
+      { q: "Communication is important for freelancers because it involves:", opts: ["Problem solving", "Strategic thinking", "Setting expectations & delivering updates"], ans: 2, exp: "Communication for freelancers is primarily about setting clear expectations and delivering project updates — this keeps clients informed and builds trust." },
+      { q: "Using different types of communication channels ensures effective communication.", opts: ["True", "False"], ans: 0, exp: "True — using a variety of communication channels (email, video calls, messaging) ensures your message reaches the receiver clearly in the most appropriate format." },
+      { q: "…….. is the ability to think before acting.", opts: ["Self-motivation", "Self-regulation", "Self-awareness"], ans: 1, exp: "Self-regulation is the ability to pause and think before reacting — it helps manage emotions and impulses in professional situations." },
+      { q: "EQ involves processing, knowledge, memory, and reasoning.", opts: ["False", "True"], ans: 0, exp: "False — processing, knowledge, memory, and reasoning describe IQ (cognitive intelligence). EQ involves recognizing and managing emotions in yourself and others." },
+      { q: "The communication process consists of:", opts: ["Sender, pause, encoding, message, receiver, decoding", "Sender, reflection, encoding, message, receiver, decoding", "Sender, encoding, message, channel, receiver, decoding"], ans: 2, exp: "The correct sequence is: Sender → Encoding → Message → Channel → Receiver → Decoding. Each step must work properly for communication to succeed." },
+      { q: "Emotional Intelligence is:", opts: ["The ability to recognize your emotions, understand what they're telling you, and realize how your emotions affect people around you.", "The ability to recognize your emotions.", "The ability to recognize your emotions, understand what they're telling you."], ans: 0, exp: "EQ is the full package: recognizing your own emotions, understanding their meaning, AND understanding how they impact the people around you." },
+      { q: "These are the clients you should aim for — the ones that value your time and value the outcome over price. They are:", opts: ["All price client", "Know it all client", "Result based client"], ans: 2, exp: "Result-based clients focus on quality and outcomes rather than the lowest price. They respect your expertise and are the most rewarding to work with." },
+      { q: "Communication, teamwork & collaboration, persuasion & influencing, and conflict management are all essential components of:", opts: ["Social skills", "Self-awareness", "Empathy"], ans: 0, exp: "Social skills encompass all interpersonal abilities — communication, collaboration, persuasion, and conflict management — making them a key EQ component." },
+      { q: "In the communication process the …… can include email, voicemail, virtual meetings or even face to face:", opts: ["Channel", "Message", "Encoding"], ans: 0, exp: "The Channel is the medium used to transmit communication — whether email, phone call, video meeting, or in-person conversation." },
+      { q: "The success of the communication process depends on:", opts: ["The receiver", "The sender", "Both"], ans: 2, exp: "Effective communication is a shared responsibility — it requires a clear sender AND an attentive, understanding receiver. Both matter equally." },
+    ]
+  },
+
+  official_quiz_3b: {
+    title: "Official Quiz — Budgeting & Pricing (M4 Quiz)",
+    track: "Freelancing",
+    color: "#f9ca24",
+    questions: [
+      { q: "When should a freelancer consider increasing their rates?", opts: ["When they gain more experience, skills, and when demand for their work becomes high.", "During their very first week of freelancing.", "Only when the client specifically asks them to.", "When they decide to change the type of bank they use."], ans: 0, exp: "Rate increases are justified by growing experience, new skills, and rising demand for your work — not by external pressures or arbitrary timing." },
+      { q: "When is the 'Per Day' pricing model most effective?", opts: ["When you want to track every minute of work.", "When writing technical blogs with high word counts.", "For short-term projects that take up a few days of your time.", "For long-term projects lasting several months."], ans: 2, exp: "The Per Day model works best for short-term, focused engagements where the work is clearly bounded within a few days." },
+      { q: "Why is it necessary to calculate 'business costs' when determining your price?", opts: ["Because it increases the number of working hours.", "To reduce the taxes you pay to the bank.", "To impress the client with how complex your work is.", "To ensure your price covers expenses (like internet and software) and generates a net profit."], ans: 3, exp: "Business costs — like software subscriptions, internet, and equipment — must be factored into your pricing so your rate covers expenses AND generates actual profit." },
+      { q: "Why is it important to set payment expectations upfront?", opts: ["To ensure the client uses the most expensive digital bank.", "To communicate clearly and ensure you are compensated fairly.", "To help the bank verify your CVV code.", "To avoid paying taxes."], ans: 1, exp: "Setting payment terms upfront — amount, schedule, and method — ensures both parties have aligned expectations and protects the freelancer from payment disputes." },
+      { q: "Which level of freelancer usually has a good portfolio and charges a middle-range rate (e.g., $30–$80)?", opts: ["Premium Expert", "Student", "Beginner", "Intermediate"], ans: 3, exp: "Intermediate freelancers have a solid portfolio and proven skills that justify mid-range rates, sitting between beginners and premium experts." },
+      { q: "Why should you study the prices of competitors in your field?", opts: ["To understand average market rates and position your pricing based on your unique value.", "To tell clients that competitors charge too much.", "To force competitors to lower their prices.", "To copy their prices exactly without change."], ans: 0, exp: "Competitor research reveals market benchmarks — allowing you to position your own pricing strategically based on your unique value, not just copy others." },
+      { q: "What should a freelancer ask themselves regarding 'Market Demand' when budgeting?", opts: ["Can I work more than 20 hours a day?", "How much does a local bank account cost?", "How many followers do I have?", "What do other freelancers charge for similar services?"], ans: 3, exp: "Understanding what others charge for similar services gives you a market reference point — critical for setting a competitive and fair rate." },
+      { q: "What justifies the price gap between a 'Beginner' ($5–$20) and a 'Premium Expert' ($300+)?", opts: ["Niche, brand, and the value proposition provided to clients.", "The specific digital bank used.", "The local market's legal conditions.", "The number of hours worked only."], ans: 0, exp: "Premium pricing is driven by specialization (niche), a strong personal brand, and the clear, demonstrable value you deliver to clients — not just time spent." },
+      { q: "Which pricing strategy relies on setting a fixed price for each specific service you provide (e.g., designing a logo for a set fee)?", opts: ["Retainer Package.", "Hourly Pricing.", "Per Word Pricing.", "Per Project or Service Pricing."], ans: 3, exp: "Per Project pricing sets one fixed fee for a defined deliverable — giving clients cost certainty and rewarding efficient freelancers for their expertise." },
+      { q: "What is the correct procedure to ensure your financial rights when agreeing with a new client?", opts: ["Waiting until the project is fully finished before asking for money.", "Starting work immediately without any written agreement.", "Requesting a deposit or working through an 'Escrow' system on platforms.", "Relying solely on the client's verbal promise."], ans: 2, exp: "Always request a deposit upfront or use an escrow system on platforms — this protects you financially and signals a professional, serious working relationship." },
+    ]
+  },
+
+  official_quiz_4b: {
+    title: "Official Quiz — Negotiation (M4 2nd Quiz)",
+    track: "Freelancing",
+    color: "#f9ca24",
+    questions: [
+      { q: "Which of the following is NOT one of Lewicki & Hiam's five negotiation strategies?", opts: ["Accommodating.", "Competing.", "Manipulating.", "Collaborating."], ans: 2, exp: "Lewicki & Hiam's five strategies are: Competing, Collaborating, Compromising, Avoiding, and Accommodating. 'Manipulating' is not one of them." },
+      { q: "Which of the following is one of the freelancer's self-protection tools?", opts: ["Trade union card.", "Government license.", "Scope document.", "Bank guarantee."], ans: 2, exp: "A scope document clearly defines the project deliverables, timeline, and boundaries — it is the freelancer's primary self-protection tool against scope creep and disputes." },
+      { q: "In freelancing (compared to traditional jobs), who represents the worker in negotiations?", opts: ["The freelancer themselves.", "The HR manager.", "A union representative.", "The client's lawyer."], ans: 0, exp: "Unlike traditional employment where HR or unions may negotiate on your behalf, freelancers must represent themselves in all negotiations." },
+      { q: "Which of the following is NOT a reason why negotiation is essential for freelancers?", opts: ["It protects the freelancer's rights.", "It guarantees the freelancer will always win every project.", "It helps avoid scope creep.", "It ensures fair compensation."], ans: 1, exp: "Negotiation protects rights, prevents scope creep, and ensures fair pay — but it never guarantees winning every project. That's not what negotiation does." },
+      { q: "The three-tier pricing strategy usually consists of:", opts: ["Basic, Standard, Premium.", "Daily, Weekly, Monthly.", "Local, Regional, International.", "Free, Cheap, Expensive."], ans: 0, exp: "The three-tier model offers Basic, Standard, and Premium packages — giving clients choice and allowing freelancers to upsell based on value and scope." },
+      { q: "The 'Win-Win' outcome is associated with which negotiation strategy?", opts: ["Competing.", "Avoiding.", "Accommodating.", "Collaborating."], ans: 3, exp: "Collaborating (Win-Win) is the strategy where both parties work together to find a solution that fully satisfies both sides' core interests." },
+      { q: "According to the training, negotiation is best defined as:", opts: ["A communication process where two or more parties aim to reach a mutually beneficial agreement.", "A debate where one party wins and the other loses.", "A legal procedure for signing contracts.", "A formal sales pitch presented to a client."], ans: 0, exp: "Negotiation is fundamentally a communication process aimed at reaching a mutually beneficial agreement — not a debate or a legal formality." },
+      { q: "Many freelancers wrongly believe that negotiation is only about:", opts: ["Price.", "Deadlines.", "Communication.", "Quality."], ans: 0, exp: "Many freelancers think negotiation is just about price — but it also covers scope, timelines, revision limits, payment terms, and more." },
+      { q: "In a traditional job, pricing is usually:", opts: ["Predefined by the company.", "Negotiated daily.", "Decided by the customer.", "Set by the freelancer."], ans: 0, exp: "In traditional employment, your compensation is usually set by the company's pay structure — unlike freelancing where you negotiate your own rates." },
+      { q: "The 'Lose-Lose' outcome is associated with which strategy?", opts: ["Avoiding.", "Compromising.", "Competing.", "Collaborating."], ans: 0, exp: "Avoiding — when both parties refuse to engage with the issue — often leads to a Lose-Lose outcome where neither side gets what they need." },
+    ]
+  },
+
+  // ── ORIGINAL OFFICIAL QUIZZES (from course PDFs) ──
+
+  official_quiz_1: {
+    title: "Official Quiz — Career Planning & Personal Branding",
+    track: "Soft Skills",
+    color: "#f9ca24",
+    questions: [
+      { q: "Finding a good job with a good salary is an example of a SMART goal.", opts: ["True", "False"], ans: 1, exp: "This is NOT a SMART goal — it's vague and not measurable. A SMART goal must be Specific, Measurable, Achievable, Relevant, and Time-bound." },
+      { q: "…… are examples of values.", opts: ["All the above", "Job stability", "Competition", "Making an impact"], ans: 0, exp: "Job stability, competition awareness, and making an impact are all examples of personal values that shape your career choices." },
+      { q: "The term 'gig' is a slang word for a job that lasts a specified period of time.", opts: ["True", "False"], ans: 0, exp: "True — 'gig' refers to short-term or project-based work, which is the foundation of the gig economy and freelancing." },
+      { q: "Working as a freelancer helps you to …", opts: ["Control your earnings", "Expand professional networks", "All the above", "Get exposed to global brands"], ans: 2, exp: "Freelancing helps you control your earnings, expand your professional network, and get exposed to global brands — all of the above." },
+      { q: "Market awareness is the ……… step in the Career Diamond model.", opts: ["First", "Second", "Third"], ans: 1, exp: "In the Career Diamond model, Market Awareness is the second step — after understanding yourself (Self), you explore the world of work." },
+      { q: "……… are deeply held convictions and principles that shape one's choices and actions.", opts: ["Personal traits", "Skills", "Values"], ans: 2, exp: "Values are deeply held beliefs and principles — like integrity, creativity, or impact — that guide your decisions and career direction." },
+      { q: "The Career Diamond places the …… on top of the diagram.", opts: ["World of work", "Self", "Awareness"], ans: 1, exp: "The Career Diamond places 'Self' at the top — because career planning starts with self-understanding: your traits, values, and interests." },
+      { q: "A career action plan should include:", opts: ["Goals", "Working hours", "Self-management"], ans: 0, exp: "A career action plan is centered around clear, SMART goals that give direction and milestones for your professional journey." },
+      { q: "Currently, there is a high global demand for freelancers in the technology field.", opts: ["True", "False"], ans: 0, exp: "True — the tech sector is one of the fastest-growing areas for freelancers globally, with high demand for developers, designers, and digital marketers." },
+      { q: "Career Planning is the process one takes to:", opts: ["Select jobs available in the market", "Match your skills and interests with desired career path", "Identify your financial goals"], ans: 1, exp: "Career planning is the process of matching your skills, interests, and values with a desired career path — not just browsing available jobs." },
+    ]
+  },
+
+  official_quiz_2: {
+    title: "Official Quiz — Communication & EQ",
+    track: "Soft Skills",
+    color: "#f9ca24",
+    questions: [
+      { q: "In the communication process, the …… can include email, voicemail, virtual meetings or even face to face:", opts: ["Message", "Channel", "Encoding"], ans: 1, exp: "The Channel is the medium through which communication travels — it can be email, phone, video call, or face-to-face conversation." },
+      { q: "EQ involves processing, knowledge, memory, and reasoning.", opts: ["False", "True"], ans: 0, exp: "False — that describes IQ (Intelligence Quotient). EQ (Emotional Intelligence) involves recognizing and managing emotions in yourself and others." },
+      { q: "Self-awareness is your ability to regulate your emotions.", opts: ["True", "False"], ans: 1, exp: "False — self-awareness is the ability to RECOGNIZE your emotions. Self-regulation is the ability to control and manage them." },
+      { q: "The success of the communication process depends on:", opts: ["The receiver", "Both", "The sender"], ans: 1, exp: "Successful communication depends on BOTH the sender and receiver — it's a two-way process requiring clarity from the sender and active listening from the receiver." },
+      { q: "Self-motivation is what pushes us to achieve our goals, feel more fulfilled, and improve our overall quality of life. It is your 'why' that keeps you moving.", opts: ["False", "True"], ans: 1, exp: "True — self-motivation is the internal drive that keeps you working toward your goals, even without external rewards or pressure." },
+      { q: "……… is the ability to think before acting.", opts: ["Self-motivation", "Self-regulation", "Self-awareness"], ans: 1, exp: "Self-regulation is the ability to pause, think before acting, and control impulsive reactions — a key component of emotional intelligence." },
+      { q: "The communication process consists of:", opts: ["Sender, reflection, encoding, message, receiver, decoding", "Sender, encoding, message, channel, receiver, decoding", "Sender, pause, encoding, message, receiver, decoding"], ans: 1, exp: "The communication process includes: Sender → Encoding → Message → Channel → Receiver → Decoding — each step must work correctly for communication to succeed." },
+      { q: "Communication is critical for winning clients (e.g., pitching and proposals) & understanding project scope.", opts: ["False", "True"], ans: 1, exp: "True — clear communication is essential for pitching services, writing proposals, setting expectations, and ensuring both parties understand the project scope." },
+      { q: "These are the clients you should aim for — the ones that value your time and value the outcome over price. They are:", opts: ["Know it all client", "All price client", "Result based client"], ans: 2, exp: "Result-based clients focus on quality and outcomes, not just cost. They're the ideal clients because they appreciate your expertise and value your time." },
+      { q: "EQ affects motivation, empathy, relationships, self-awareness, and self-control.", opts: ["False", "True"], ans: 1, exp: "True — EQ (Emotional Intelligence) directly influences all these areas, making it a core skill for personal and professional success." },
+    ]
+  },
+
+  official_quiz_3: {
+    title: "Official Quiz — Budgeting & Pricing",
+    track: "Freelancing",
+    color: "#f9ca24",
+    questions: [
+      { q: "What is a primary risk of the 'Per Project' pricing model?", opts: ["Clients might forget the word count.", "Tracking every minute of work is exhausting.", "Underestimating the time required and losing money.", "It only works for very long-term projects."], ans: 2, exp: "The biggest risk of per-project pricing is underestimating how long a project takes — you could end up earning far less per hour than expected." },
+      { q: "Which of these is a key factor to consider when determining pricing?", opts: ["The number of emails sent.", "Skills and expertise.", "Your favorite hobby.", "The color of your laptop."], ans: 1, exp: "Your skills and expertise are a primary factor in setting your rate — higher specialization and experience justify higher prices." },
+      { q: "What is the definition of 'Pricing' for a freelancer?", opts: ["Tracking the number of words written per day.", "What is the definition of 'Pricing' for a freelancer?", "Tracking the number of words written per day.", "Determining the cost or rate at which a freelancer offers services to clients."], ans: 3, exp: "Pricing is the process of determining the fair cost or rate at which you offer your services, reflecting your skills, time, and market value." },
+      { q: "What is the first step in the 'Pricing Steps'?", opts: ["Competitor analysis.", "Self-analysis.", "Customer analysis.", "Choosing a pricing strategy."], ans: 1, exp: "The first step in pricing is self-analysis — understanding your own skills, experience level, and the value you bring before looking at competitors or customers." },
+      { q: "When performing a 'Customer Analysis', what are you researching?", opts: ["The rates of other freelancers in your niche.", "Your target market's typical budget range and pain points.", "Your own profit margins.", "Your daily electricity costs."], ans: 1, exp: "Customer analysis means researching your target market — what they can afford, what problems they face, and what they're willing to pay to solve them." },
+      { q: "In 'Self-Analysis', what should a freelancer compare their experience to?", opts: ["Industry standards.", "Their neighbor's salary.", "Local tax rates.", "Their previous hobbies."], ans: 0, exp: "In self-analysis, you benchmark your experience and skills against industry standards to determine where you sit in the market and what rate is justified." },
+      { q: "Which of these is considered a standard freelancer expense to incorporate into pricing?", opts: ["Gym memberships.", "Movie tickets.", "Software subscriptions.", "Grocery shopping."], ans: 2, exp: "Software subscriptions are legitimate business expenses — tools like design software, project management apps, or communication platforms — that should be factored into your pricing." },
+      { q: "Why might 'Per Word' pricing be problematic for social media posts?", opts: ["Social media platforms charge their own fees.", "It doesn't account for projects with short word counts but high complexity.", "It is too hard to count words on social media.", "Most social media posts are free."], ans: 1, exp: "A short social media post can require significant strategy, creativity, and research — per-word pricing ignores this complexity and undervalues the work." },
+      { q: "Which pricing model involves setting an hourly rate and tracking time?", opts: ["Per Word.", "Per Hour.", "Per Project.", "Per Day."], ans: 1, exp: "The Per Hour model involves setting a rate for each hour worked and tracking time carefully — it's transparent but can feel unpredictable for clients." },
+      { q: "What is a potential issue with the 'Per Hour' pricing model?", opts: ["You might not be paid according to your worth for strategic tasks that don't take long.", "It is only used by premium experts.", "It is too difficult to manage.", "Clients never agree to hourly rates."], ans: 0, exp: "The Per Hour model can undervalue strategic or creative work that delivers high impact in short time — your worth isn't always measured in hours." },
+    ]
+  },
+
+  official_quiz_4: {
+    title: "Official Quiz — Negotiation Skills",
+    track: "Freelancing",
+    color: "#f9ca24",
+    questions: [
+      { q: "A strong portfolio helps a freelancer in negotiations because it:", opts: ["Replaces the need for any contract.", "Forces the client to pay more.", "Justifies higher rates by showing proof of quality.", "Eliminates the need for revisions."], ans: 2, exp: "A strong portfolio provides tangible proof of your work quality, giving you leverage to justify higher rates during price negotiations." },
+      { q: "A client says: 'I just want something that looks nice.' The best freelancer response is to:", opts: ["Start working immediately based on guesses.", "Refuse the project entirely.", "Send the highest priced package without discussion.", "Ask the client to clarify their main goals and provide examples of what they like."], ans: 3, exp: "Vague briefs lead to scope creep and misaligned results. Always clarify goals and get examples before committing to any work." },
+      { q: "A client urgently asks: 'Can you deliver everything by tomorrow?' The most professional, value-protecting response is:", opts: ['"Yes, no problem, same price."', '"I can deliver faster with an extra fee, to ensure quality. Would that work for you?"', '"Tomorrow is too soon, contact someone else."', '"No, that\'s impossible."'], ans: 1, exp: "Rush deliveries require extra effort and protect your quality standards — it's professional to offer expedited delivery at a fair premium rather than saying yes or no outright." },
+      { q: "Adding 'Any request outside this scope will require a new quote' to a scope document mainly helps prevent:", opts: ["Client communication.", "Tax issues.", "Scope creep.", "Portfolio growth."], ans: 2, exp: "This clause explicitly sets boundaries — it's one of the most effective tools to prevent scope creep and ensure you're compensated for extra work." },
+      { q: "Two parties want to keep working together long-term and both have important goals on the table. They sit down to find a solution that fully satisfies both sides' core interests. This is an example of:", opts: ["Compromising.", "Competing.", "Avoiding.", "Collaborating."], ans: 3, exp: "Collaborating (Win-Win) is the ideal approach when both parties have high stakes and want a long-term relationship — it seeks solutions that fully satisfy both sides." },
+      { q: "The TRIP model's core rule states:", opts: ["Always demand 100% upfront payment.", "Never reduce the price without reducing the scope or changing the terms.", "Always include unlimited revisions.", "Always reduce the price to close the deal."], ans: 1, exp: "The TRIP model's core rule protects your value: if a client pushes for a lower price, you must reduce the scope or change terms — never discount without getting something in return." },
+      { q: "'Accommodating (Lose-Win)' means:", opts: ["Pushing aggressively for your own outcome.", "Prioritizing the relationship at the cost of your own outcome.", "Refusing to negotiate at all.", "Both parties give up something equally."], ans: 1, exp: "Accommodating means you prioritize keeping the relationship over achieving your own goals — occasionally useful, but can become a habit that devalues your work." },
+      { q: "According to Lewicki & Hiam, a freelancer chooses a negotiation strategy based on two main factors:", opts: ["The size of the project and the freelancer's age.", "The importance of the outcome and the importance of the relationship.", "The country of the client and the currency used.", "The client's mood and the time of day."], ans: 1, exp: "Lewicki & Hiam's negotiation model is based on two dimensions: how much you care about the outcome and how much you care about the relationship with the other party." },
+      { q: "'Being willing to walk away' from a deal means:", opts: ["Quitting at the first sign of difficulty.", "Disappearing without notice.", "Refusing all clients out of fear.", "Saying no professionally when the deal is unfair or doesn't feel right."], ans: 3, exp: "Being willing to walk away is a sign of professional confidence — it means you know your worth and will decline deals that don't meet your minimum standards." },
+      { q: "A client constantly finds faults and dismisses every suggestion you make, but never proposes solutions. This client type is most likely:", opts: ["Defensive.", "Arrogant.", "Complaining.", "Perfectionist."], ans: 2, exp: "A complaining client constantly criticizes without constructive input or solutions. Recognizing this pattern early helps you set clear expectations and boundaries." },
+    ]
+  },
+
+};
+
+// ── STATE ──
+let currentQuizId = null;
+let questions = [];
+let currentIndex = 0;
+let score = 0;
+let answered = false;
+const completed = new Set();
+
+function switchTrack(trackId, btn) {
+  document.querySelectorAll('.track-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.track-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('track-' + trackId).classList.add('active');
+}
+
+function openQuiz(id) {
+  currentQuizId = id;
+  const quiz = QUIZZES[id];
+  questions = [...quiz.questions];
+  currentIndex = 0;
+  score = 0;
+  answered = false;
+
+  const tag = document.getElementById('modal-track-tag');
+  tag.textContent = quiz.track;
+  tag.style.background = quiz.color + '22';
+  tag.style.color = quiz.color;
+  document.getElementById('modal-title').textContent = quiz.title;
+
+  document.getElementById('quiz-body').style.display = 'block';
+  document.getElementById('results').classList.remove('show');
+
+  renderQuestion();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function renderQuestion() {
+  const q = questions[currentIndex];
+  answered = false;
+
+  const pct = (currentIndex / questions.length) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('q-counter').textContent = `Question ${currentIndex + 1} of ${questions.length}`;
+  document.getElementById('question-text').textContent = q.q;
+  document.getElementById('score-chip').textContent = `Score: ${score} / ${currentIndex}`;
+
+  const optDiv = document.getElementById('options');
+  optDiv.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(i);
+    optDiv.appendChild(btn);
+  });
+
+  document.getElementById('explanation').classList.remove('show');
+  document.getElementById('next-btn').classList.remove('show');
+}
+
+function selectAnswer(i) {
+  if (answered) return;
+  answered = true;
+
+  const q = questions[currentIndex];
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => b.disabled = true);
+
+  btns[q.ans].classList.add('correct');
+  if (i !== q.ans) {
+    btns[i].classList.add('wrong');
+  } else {
+    score++;
+  }
+
+  document.getElementById('score-chip').textContent = `Score: ${score} / ${currentIndex + 1}`;
+
+  const exp = document.getElementById('explanation');
+  exp.textContent = '💡 ' + q.exp;
+  exp.classList.add('show');
+  document.getElementById('next-btn').classList.add('show');
+
+  // Save wrong answer for review
+  if (i !== q.ans) {
+    const quiz = QUIZZES[currentQuizId];
+    saveWrongAnswer(
+      currentQuizId,
+      q.q,
+      q.opts[i],
+      q.opts[q.ans],
+      q.exp,
+      quiz.title,
+      quiz.color
+    );
+  }
+}
+
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('quiz-body').style.display = 'none';
+  const pct = Math.round((score / questions.length) * 100);
+  let emoji, title, msg;
+  if (pct === 100) { emoji = '🏆'; title = 'Perfect Score!'; msg = 'Outstanding — you\'ve mastered this topic!'; }
+  else if (pct >= 80) { emoji = '🌟'; title = 'Excellent!'; msg = 'Great understanding of this topic.'; }
+  else if (pct >= 60) { emoji = '👍'; title = 'Good Job!'; msg = 'Solid foundation — a quick review will get you to 100%.'; }
+  else { emoji = '📚'; title = 'Keep Practicing'; msg = 'Review the material and try again — you\'ve got this!'; }
+
+  document.getElementById('results-emoji').textContent = emoji;
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-score').textContent = `${score} / ${questions.length}`;
+  document.getElementById('results-msg').textContent = msg;
+  document.getElementById('results').classList.add('show');
+
+  completed.add(currentQuizId);
+  document.querySelectorAll('.topic-card').forEach(card => {
+    const onclick = card.getAttribute('onclick');
+    if (onclick && onclick.includes(currentQuizId)) {
+      card.classList.add('completed');
+    }
+  });
+}
+
+function retryQuiz() {
+  openQuiz(currentQuizId);
+}
+
+function closeQuiz() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('overlay')) closeQuiz();
+}
+
+// ── WRONG ANSWERS SYSTEM ──
+function getWrongAnswers() {
+  try {
+    return JSON.parse(localStorage.getItem('quiz_wrong_answers') || '[]');
+  } catch { return []; }
+}
+
+function saveWrongAnswer(quizId, question, yourAnswer, correctAnswer, explanation, topicTitle, topicColor) {
+  const wrongs = getWrongAnswers();
+  // Avoid exact duplicates (same quiz + same question)
+  const exists = wrongs.find(w => w.quizId === quizId && w.question === question);
+  if (!exists) {
+    wrongs.push({
+      quizId,
+      question,
+      yourAnswer,
+      correctAnswer,
+      explanation,
+      topicTitle,
+      topicColor,
+      date: new Date().toLocaleString()
+    });
+    localStorage.setItem('quiz_wrong_answers', JSON.stringify(wrongs));
+    updateFabBadge();
+  }
+}
+
+function clearWrongAnswers() {
+  localStorage.removeItem('quiz_wrong_answers');
+  updateFabBadge();
+ renderWrongAnswers();
+}
+
+function updateFabBadge() {
+  const wrongs = getWrongAnswers();
+  const badge = document.getElementById('fab-badge');
+  if (wrongs.length > 0) {
+    badge.textContent = wrongs.length;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+function openWrongAnswers() {
+  renderWrongAnswers();
+  document.getElementById('wrong-overlay').classList.add('open');
+}
+
+function closeWrongAnswers() {
+  document.getElementById('wrong-overlay').classList.remove('open');
+}
+
+function handleWrongOverlayClick(e) {
+  if (e.target === document.getElementById('wrong-overlay')) closeWrongAnswers();
+}
+
+function renderWrongAnswers() {
+  const wrongs = getWrongAnswers();
+  const container = document.getElementById('wrong-list');
+
+  if (wrongs.length === 0) {
+    container.innerHTML = `
+      <div class="wrong-empty">
+        <div class="wrong-empty-icon">🎉</div>
+        <p>No mistakes yet — you're doing great!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = wrongs.map(w => `
+    <div class="wrong-card">
+      <div class="wrong-card-topic" style="background:${w.topicColor}22;color:${w.topicColor}">${w.topicTitle}</div>
+      <div class="wrong-card-question">${w.question}</div>
+      <div class="wrong-card-answers">
+        <div class="ans-item yours">
+          <div class="ans-label" style="color:var(--wrong)">Your Answer</div>
+          ${w.yourAnswer}
+        </div>
+        <div class="ans-item correct">
+          <div class="ans-label" style="color:var(--correct)">Correct Answer</div>
+          ${w.correctAnswer}
+        </div>
+      </div>
+      <div class="wrong-card-explanation">💡 ${w.explanation}</div>
+    </div>
+  `).join('');
+}
+
+// Update badge on page load
+updateFabBadge();
+</script>
+</body>
+</html>
